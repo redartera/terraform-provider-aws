@@ -16,6 +16,7 @@ var (
 	overrideProviderSchema = &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
+		Computed: true,
 		MaxItems: 1,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
@@ -38,6 +39,7 @@ var (
 				names.AttrRegion: {
 					Type:         schema.TypeString,
 					Optional:     true,
+					Computed:     true,
 					ForceNew:     true,
 					ValidateFunc: verify.ValidRegionName, // TODO: Valid for partition
 					Description:  `Per-resource Region override.`,
@@ -83,4 +85,8 @@ func expandOverrideProviderDefaultTags(ctx context.Context, tfMap map[string]int
 	}
 
 	return data
+}
+
+func providerRegionCustomizeDiffFunc(ctx context.Context, d *schema.ResourceDiff, meta interface{}) error {
+	return d.SetNew("override_provider", []interface{}{map[string]interface{}{names.AttrRegion: "us-east-2"}})
 }

@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/customdiff"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
 	"github.com/hashicorp/terraform-provider-aws/internal/conns"
@@ -470,7 +471,22 @@ func New(ctx context.Context) (*schema.Provider, error) {
 				}
 			}
 			if v := r.CustomizeDiff; v != nil {
-				r.CustomizeDiff = rs.CustomizeDiff(v)
+				c := rs.CustomizeDiff(v)
+
+				// HACK
+				// HACK Inject a CustomizeDiffFunc to store the resource's Region.
+				// HACK
+				if typeName == "aws_accessanalyzer_analyzer" {
+					v := providerRegionCustomizeDiffFunc
+
+					if c != nil {
+						c = customdiff.All(v, c)
+					} else {
+						c = v
+					}
+				}
+
+				r.CustomizeDiff = c
 			}
 			for _, stateUpgrader := range r.StateUpgraders {
 				if v := stateUpgrader.Upgrade; v != nil {
